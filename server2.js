@@ -7,6 +7,18 @@ const mysql = require("mysql2")
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
 
+//create a connection to thw database
+const connection = mysql.createConnection({
+    host: '127.0.0.1',
+    user: 'root',
+    password: '',
+    database: 'mahasiswa'
+});
+connection.connect(error => {
+if (error) throw error;
+    console.log("Terhubung kedatabase mahasiswa.");
+})
+
 
 app.use(session({
     secret: 'secret-key',
@@ -38,12 +50,25 @@ app.post('/register', (req, res) => {
 //Route Login
 app.post('/login', (req, res) => {
     const {username, password} = req.body;
-    if (username === 'admin' && password === 'admin') {
-        req.session.isAuthenticate = true;
-        res.send('login sukses');
-    } else {
-        res.status(401).send('username atau password anda salah !!!')
-    }
+
+    connection.promise().query(`SELECT * FROM user WHERE username = '${username}'
+                                AND password = PASSWORD('${password}')`)
+    .then((results) => {
+        if (results.length > 0) {
+            //pengguna terautentikasi
+            req.session.isAuthenticate = true;
+            res.json({ message: 'Berhasil Login'});
+        } else {
+            //pengguna tidak terautentikasi
+            res.status(401).send('Username atau password salah')
+        }
+    })
+    // if (username === 'admin' && password === 'admin') {
+    //     req.session.isAuthenticate = true;
+    //     res.send('login sukses');
+    // } else {
+    //     res.status(401).send('username atau password anda salah !!!')
+    // }
 });
 
 app.get('/logout', (req, res) => {
